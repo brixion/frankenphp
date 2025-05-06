@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ARM-Runner
+    runs-on: arm64-runner
     permissions:
       contents: read
       packages: write
