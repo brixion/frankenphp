@@ -24,6 +24,7 @@ RUN set -eux; \
         intl \
         opcache \
         zip \
+        bcmath \
     ;
 
 # https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
