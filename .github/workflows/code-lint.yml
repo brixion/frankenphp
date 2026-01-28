@@ -11,7 +11,7 @@ concurrency:
 jobs:
   lint-dockerfile:
     name: Lint Dockerfile
-    runs-on: ubuntu-latest
+    runs-on: brixion-runners
     permissions:
       contents: read
 
