@@ -2,7 +2,8 @@ ARG PHP_VERSION=8.5.1
 FROM dunglas/frankenphp:php${PHP_VERSION}-alpine
 
 # Install system dependencies
-RUN apk add --no-cache \
+RUN apk upgrade --no-cache && \
+    apk add --no-cache \
     acl \
     file \
     gettext \
