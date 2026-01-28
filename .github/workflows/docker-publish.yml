@@ -43,7 +43,7 @@ jobs:
         run: docker save frankenphp:${{ matrix.php_version }}-build -o image-${{ matrix.php_version }}.tar
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docker-image-${{ matrix.php_version }}
           path: image-${{ matrix.php_version }}.tar
@@ -91,7 +91,7 @@ jobs:
 
       - name: Upload scan results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: grype-scan-${{ matrix.php_version }}.txt
           path: grype-scan-${{ matrix.php_version }}.txt
