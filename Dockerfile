@@ -1,4 +1,5 @@
-FROM dunglas/frankenphp:1-php8.5.1
+ARG PHP_VERSION=8.5.1
+FROM dunglas/frankenphp:1-php${PHP_VERSION}
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

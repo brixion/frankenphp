@@ -1,0 +1,40 @@
+---
+version: 2
+updates:
+  # Docker base image updates
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "⬆️ [ Docker ] "
+      include: "scope"
+    # Rebase strategy: auto-rebase for cleaner history
+    rebase-strategy: "auto"
+    # Group minor and patch updates together
+    groups:
+      docker-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "⬆️  [ GitHub Actions ] "
+    labels:
+      - "dependencies"

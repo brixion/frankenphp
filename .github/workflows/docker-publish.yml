@@ -1,12 +1,109 @@
-name: Publish Docker image
+name: Build and Publish Docker image
 
 on:
   push:
-    branches: [php-8.5]
+  schedule:
+    - cron: '0 9 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-push:
+  build-check:
+    name: Build Check (PHP ${{ matrix.php_version }})
     runs-on: arm64-runner
+    strategy:
+      fail-fast: false
+      matrix:
+        php_version: [8.3, 8.5.1]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (validation only)
+        uses: docker/build-push-action@v6.15.0
+        with:
+          context: .
+          push: false
+          load: true
+          tags: frankenphp:${{ matrix.php_version }}-build
+          build-args: |
+            PHP_VERSION=${{ matrix.php_version }}
+          cache-from: type=gha,scope=image-${{ matrix.php_version }}
+          cache-to: type=gha,mode=max,scope=image-${{ matrix.php_version }}
+
+      - name: Save image as tarball
+        run: docker save frankenphp:${{ matrix.php_version }}-build -o image-${{ matrix.php_version }}.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ matrix.php_version }}
+          path: image-${{ matrix.php_version }}.tar
+          retention-days: 1
+
+  scan-check:
+    name: Scan Check (PHP ${{ matrix.php_version }})
+    runs-on: brixion-runners
+    needs: build-check
+    strategy:
+      fail-fast: false
+      matrix:
+        php_version: [8.3, 8.5.1]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-${{ matrix.php_version }}
+
+      - name: Load image
+        run: docker load -i image-${{ matrix.php_version }}.tar
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: frankenphp:${{ matrix.php_version }}-build
+          format: spdx-json
+          artifact-name: ${{ github.event.repository.name }}-${{ matrix.php_version }}-sbom.spdx.json
+          output-file: ${{ github.event.repository.name }}-${{ matrix.php_version }}-sbom.spdx.json
+          upload-artifact: true
+
+      - name: Scan SBOM for vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: "${{ github.event.repository.name }}-${{ matrix.php_version }}-sbom.spdx.json"
+          output-format: table
+          output-file: grype-scan-${{ matrix.php_version }}.txt
+
+      - name: Upload scan results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grype-scan-${{ matrix.php_version }}.txt
+          path: grype-scan-${{ matrix.php_version }}.txt
+
+  build-and-push:
+    name: Build and Push (PHP ${{ matrix.php_version }})
+    runs-on: arm64-runner
+    needs: [build-check, scan-check]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        php_version: [8.3, 8.5.1]
     permissions:
       contents: read
       packages: write
@@ -32,7 +129,8 @@ jobs:
           context: .
           push: true
           platforms: linux/arm64
-          tags: ghcr.io/${{ github.repository }}:8.5
-          cache-from: type=gha,scope=image
-          cache-to: type=gha,mode=max,scope=image
-  
+          tags: ghcr.io/${{ github.repository }}:${{ matrix.php_version }}
+          build-args: |
+            PHP_VERSION=${{ matrix.php_version }}
+          cache-from: type=gha,scope=image-${{ matrix.php_version }}
+          cache-to: type=gha,mode=max,scope=image-${{ matrix.php_version }}
