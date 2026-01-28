@@ -1,32 +1,31 @@
 ARG PHP_VERSION=8.5.1
-FROM dunglas/frankenphp:1-php${PHP_VERSION}
+FROM dunglas/frankenphp:php${PHP_VERSION}-alpine
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apk add --no-cache \
     acl \
     file \
     gettext \
     git \
-    libpq-dev \
-    libfreetype6-dev \
-    libjpeg62-turbo-dev \
+    postgresql-dev \
+    freetype-dev \
+    libjpeg-turbo-dev \
     libpng-dev \
     && docker-php-ext-install \
     pdo \
-    pdo_pgsql \
-    && rm -rf /var/lib/apt/lists/*
+    pdo_pgsql
 
 # Install PHP extensions
 RUN set -eux; \
     install-php-extensions \
-        @composer \
-        apcu \
-        gd \
-        intl \
-        opcache \
-        zip \
-        bcmath \
-        intl \
+    @composer \
+    apcu \
+    gd \
+    intl \
+    opcache \
+    zip \
+    bcmath \
+    intl \
     ;
 
 # https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
