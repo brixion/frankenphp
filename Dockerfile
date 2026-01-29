@@ -20,13 +20,14 @@ RUN apk upgrade --no-cache && \
 RUN set -eux; \
     install-php-extensions \
     @composer \
+    pdo_mysql \
+    pdo_pgsql \
     apcu \
     gd \
     intl \
     opcache \
     zip \
     bcmath \
-    intl \
     ;
 
 # https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
