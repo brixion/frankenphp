@@ -1,3 +1,4 @@
+---
 name: Build and Publish Docker image
 
 on:
@@ -40,7 +41,9 @@ jobs:
           cache-to: type=gha,mode=max,scope=image-${{ matrix.php_version }}
 
       - name: Save image as tarball
-        run: docker save frankenphp:${{ matrix.php_version }}-build -o image-${{ matrix.php_version }}.tar
+        run: |
+          docker save frankenphp:${{ matrix.php_version }}-build \
+            -o image-${{ matrix.php_version }}.tar
 
       - name: Upload image artifact
         uses: actions/upload-artifact@v6
@@ -77,8 +80,10 @@ jobs:
         with:
           image: frankenphp:${{ matrix.php_version }}-build
           format: spdx-json
-          artifact-name: ${{ github.event.repository.name }}-${{ matrix.php_version }}-sbom.spdx.json
-          output-file: ${{ github.event.repository.name }}-${{ matrix.php_version }}-sbom.spdx.json
+          artifact-name: >-
+            ${{ github.event.repository.name }}-${{ matrix.php_version }}-sbom.spdx.json
+          output-file: >-
+            ${{ github.event.repository.name }}-${{ matrix.php_version }}-sbom.spdx.json
           upload-artifact: true
 
       - name: Scan SBOM for vulnerabilities

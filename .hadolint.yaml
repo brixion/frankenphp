@@ -1,3 +1,4 @@
+---
 # .hadolint.yaml
 ignored:
   - DL3007 # Using latest is prone to errors if the image will ever update
