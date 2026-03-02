@@ -47,7 +47,7 @@ jobs:
             -o image-${{ matrix.php_version }}.tar
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docker-image-${{ matrix.php_version }}
           path: image-${{ matrix.php_version }}.tar
@@ -97,7 +97,7 @@ jobs:
 
       - name: Upload scan results
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: grype-scan-${{ matrix.php_version }}.txt
           path: grype-scan-${{ matrix.php_version }}.txt
