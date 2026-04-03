@@ -23,6 +23,7 @@ RUN set -eux; \
     pdo_mysql \
     pdo_pgsql \
     apcu \
+    exif \
     gd \
     intl \
     opcache \
