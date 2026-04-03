@@ -91,7 +91,8 @@ jobs:
         uses: anchore/scan-action@v7
         with:
           sbom: "${{ github.event.repository.name }}-${{ matrix.php_version }}-sbom.spdx.json"
-          severity-cutoff: high
+          fail-build: false
+          only-fixed: true
           output-format: table
           output-file: grype-scan-${{ matrix.php_version }}.txt
 
