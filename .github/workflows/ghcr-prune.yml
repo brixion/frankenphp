@@ -36,8 +36,9 @@ jobs:
             const packageName = context.repo.repo; // ghcr.io/<owner>/<repo>
 
             const isDispatch = context.eventName === "workflow_dispatch";
-            const retentionDaysRaw = isDispatch ? (core.getInput("retention-days") || "14") : "14";
-            const dryRunRaw = isDispatch ? (core.getInput("dry-run") || "true") : "false";
+            const dispatchInputs = (context.payload && context.payload.inputs) ? context.payload.inputs : {};
+            const retentionDaysRaw = isDispatch ? (dispatchInputs["retention-days"] || "14") : "14";
+            const dryRunRaw = isDispatch ? (dispatchInputs["dry-run"] || "true") : "false";
             const retentionDays = Number.parseInt(retentionDaysRaw, 10);
             const dryRun = String(dryRunRaw).toLowerCase() === "true";
 
