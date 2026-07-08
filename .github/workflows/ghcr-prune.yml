@@ -1,0 +1,123 @@
+---
+name: Prune unused GHCR images
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+    inputs:
+      retention-days:
+        description: "Delete untagged versions older than N days"
+        required: true
+        default: "14"
+      dry-run:
+        description: "Log what would be deleted"
+        required: true
+        default: "true"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: Prune untagged package versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prune untagged GHCR versions
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const packageName = context.repo.repo; // ghcr.io/<owner>/<repo>
+
+            const isDispatch = context.eventName === "workflow_dispatch";
+            const retentionDaysRaw = isDispatch ? (core.getInput("retention-days") || "14") : "14";
+            const dryRunRaw = isDispatch ? (core.getInput("dry-run") || "true") : "false";
+            const retentionDays = Number.parseInt(retentionDaysRaw, 10);
+            const dryRun = String(dryRunRaw).toLowerCase() === "true";
+
+            if (!Number.isFinite(retentionDays) || retentionDays < 0) {
+              throw new Error(`Invalid retention-days: ${retentionDaysRaw}`);
+            }
+
+            const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+            core.info(`Owner: ${owner}`);
+            core.info(`Package: ${packageName}`);
+            core.info(`Retention: ${retentionDays} days (cutoff ${cutoff.toISOString()})`);
+            core.info(`Dry-run: ${dryRun}`);
+
+            async function* paginateVersions() {
+              const iterator = github.paginate.iterator(
+                github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg,
+                { org: owner, package_type: "container", package_name: packageName, per_page: 100 },
+              );
+              try {
+                for await (const page of iterator) yield page.data;
+                return;
+              } catch (e) {
+                core.info(`Org package lookup failed (${e.message}); falling back to user-owned packages.`);
+              }
+
+              for await (const page of github.paginate.iterator(
+                github.rest.packages.getAllPackageVersionsForPackageOwnedByUser,
+                { username: owner, package_type: "container", package_name: packageName, per_page: 100 },
+              )) {
+                yield page.data;
+              }
+            }
+
+            const deletions = [];
+
+            for await (const versions of paginateVersions()) {
+              for (const v of versions) {
+                const tags = v?.metadata?.container?.tags ?? [];
+                const createdAt = new Date(v.created_at);
+                const updatedAt = new Date(v.updated_at);
+
+                const isUntagged = tags.length === 0;
+                const isOld = updatedAt < cutoff && createdAt < cutoff;
+
+                if (!isUntagged) continue;
+                if (!isOld) continue;
+
+                deletions.push({
+                  id: v.id,
+                  created_at: v.created_at,
+                  updated_at: v.updated_at,
+                });
+              }
+            }
+
+            core.info(`Found ${deletions.length} deletable untagged version(s).`);
+
+            for (const d of deletions) {
+              const msg = `Delete package version id=${d.id} (created ${d.created_at}, updated ${d.updated_at})`;
+              if (dryRun) {
+                core.info(`[dry-run] ${msg}`);
+                continue;
+              }
+
+              try {
+                await github.rest.packages.deletePackageVersionForOrg({
+                  org: owner,
+                  package_type: "container",
+                  package_name: packageName,
+                  package_version_id: d.id,
+                });
+                core.info(msg);
+              } catch (e) {
+                core.info(`Org delete failed (${e.message}); trying user delete.`);
+                await github.rest.packages.deletePackageVersionForUser({
+                  username: owner,
+                  package_type: "container",
+                  package_name: packageName,
+                  package_version_id: d.id,
+                });
+                core.info(msg);
+              }
+            }
