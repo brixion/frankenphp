@@ -1,0 +1,15 @@
+---
+
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate:
+    name: Validate PR
+    uses: brixion/workflows/.github/workflows/pr-validation.yml@main
