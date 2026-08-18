@@ -36,7 +36,8 @@ jobs:
             const packageName = context.repo.repo; // ghcr.io/<owner>/<repo>
 
             const isDispatch = context.eventName === "workflow_dispatch";
-            const dispatchInputs = (context.payload && context.payload.inputs) ? context.payload.inputs : {};
+            const payloadInputs = context.payload && context.payload.inputs;
+            const dispatchInputs = payloadInputs ? payloadInputs : {};
             const retentionDaysRaw = isDispatch ? (dispatchInputs["retention-days"] || "14") : "14";
             const dryRunRaw = isDispatch ? (dispatchInputs["dry-run"] || "true") : "false";
             const retentionDays = Number.parseInt(retentionDaysRaw, 10);
@@ -61,12 +62,20 @@ jobs:
                 for await (const page of iterator) yield page.data;
                 return;
               } catch (e) {
-                core.info(`Org package lookup failed (${e.message}); falling back to user-owned packages.`);
+                core.info(
+                  `Org package lookup failed (${e.message}); ` +
+                    "falling back to user-owned packages.",
+                );
               }
 
               for await (const page of github.paginate.iterator(
                 github.rest.packages.getAllPackageVersionsForPackageOwnedByUser,
-                { username: owner, package_type: "container", package_name: packageName, per_page: 100 },
+                {
+                  username: owner,
+                  package_type: "container",
+                  package_name: packageName,
+                  per_page: 100,
+                },
               )) {
                 yield page.data;
               }
@@ -97,7 +106,9 @@ jobs:
             core.info(`Found ${deletions.length} deletable untagged version(s).`);
 
             for (const d of deletions) {
-              const msg = `Delete package version id=${d.id} (created ${d.created_at}, updated ${d.updated_at})`;
+              const msg =
+                `Delete package version id=${d.id} ` +
+                `(created ${d.created_at}, updated ${d.updated_at})`;
               if (dryRun) {
                 core.info(`[dry-run] ${msg}`);
                 continue;
