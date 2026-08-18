@@ -1,4 +1,6 @@
 ---
+# This file is managed by brixion/boilerplate.
+# Do not edit it in this repository; changes will be overwritten on the next sync.
 version: 2
 updates:
   - package-ecosystem: github-actions

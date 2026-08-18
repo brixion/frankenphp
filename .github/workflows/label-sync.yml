@@ -1,5 +1,6 @@
 ---
-
+# This file is managed by brixion/boilerplate.
+# Do not edit it in this repository; changes will be overwritten on the next sync.
 name: Label Sync
 
 on:
