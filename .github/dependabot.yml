@@ -10,4 +10,4 @@ updates:
     commit-message:
       prefix: '⬆️ [ GitHub Actions ] '
     labels:
-      - dependencies
+      - 'type: 📦 dependencies'
