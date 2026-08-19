@@ -13,5 +13,5 @@ permissions:
 jobs:
   automate:
     name: Automate
-    uses: brixion/workflows/.github/workflows/dependabot-automate.yml@main
+    uses: brixion/workflows/.github/workflows/reusable-dependabot-automate.yml@main
     secrets: inherit

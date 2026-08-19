@@ -13,4 +13,4 @@ permissions:
 jobs:
   lint:
     name: Lint
-    uses: brixion/workflows/.github/workflows/lint.yml@main
+    uses: brixion/workflows/.github/workflows/reusable-lint.yml@main
